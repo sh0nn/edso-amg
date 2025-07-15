@@ -1,120 +1,112 @@
 
 import streamlit as st
+import matplotlib.pyplot as plt
+import numpy as np
 from fpdf import FPDF
-from datetime import datetime
+import tempfile
+import base64
 
-st.title("EDSO App - Kuesioner dan Analisis")
+st.title("Kuesioner Keseimbangan Hormon E.D.S.O")
 
-# Define 40 questions for 4 hormones (10 each)
-questions = {
-    "Endorfin": [
-        "Saya merasa bersemangat menjalani hari ini.",
-        "Saya tetap termotivasi meski menghadapi tantangan.",
-        "Saya bisa tetap positif walau banyak tekanan.",
-        "Saya sering tertawa atau menikmati humor.",
-        "Saya mampu menjalani aktivitas fisik tanpa cepat lelah.",
-        "Saya merasa puas setelah menyelesaikan tugas berat.",
-        "Saya bisa mengatasi rasa sakit atau ketidaknyamanan.",
-        "Saya merasa antusias dalam menjalani rutinitas.",
-        "Saya merasa kuat secara fisik dan mental.",
-        "Saya tetap berenergi meski kurang tidur."
-    ],
-    "Dopamin": [
-        "Saya merasa puas setelah menyelesaikan tugas.",
-        "Saya senang membuat daftar dan mencoret yang selesai.",
-        "Saya merasa bahagia saat mencapai target kecil.",
-        "Saya termotivasi oleh pencapaian pribadi.",
-        "Saya mengejar prestasi dengan antusias.",
-        "Saya mudah terdorong oleh reward/hadiah.",
-        "Saya merasa bangga terhadap pencapaian saya.",
-        "Saya fokus mencapai goal jangka pendek maupun panjang.",
-        "Saya suka menyelesaikan tantangan.",
-        "Saya senang membuat kemajuan terukur."
-    ],
-    "Serotonin": [
-        "Saya merasa dihargai oleh orang di sekitar.",
-        "Saya merasa percaya diri dengan diri sendiri.",
-        "Saya merasa memiliki status yang dihormati.",
-        "Saya merasa menjadi bagian penting dari tim.",
-        "Saya merasa diperlakukan adil oleh lingkungan.",
-        "Saya merasa damai dan tenang secara emosi.",
-        "Saya merasa mampu mengelola stres.",
-        "Saya memiliki kontrol atas keputusan saya.",
-        "Saya merasa percaya diri dalam menghadapi konflik.",
-        "Saya merasa aman secara sosial dan emosional."
-    ],
-    "Oksitosin": [
-        "Saya merasa terhubung dengan orang lain.",
-        "Saya memiliki orang yang bisa saya percaya.",
-        "Saya suka membantu orang lain.",
-        "Saya merasa nyaman berada dalam kelompok.",
-        "Saya merasa empati terhadap orang lain.",
-        "Saya merasa dicintai dan diterima.",
-        "Saya sering menunjukkan kasih sayang.",
-        "Saya percaya orang lain peduli pada saya.",
-        "Saya suka berbagi cerita atau pengalaman.",
-        "Saya merasa penting untuk menjaga hubungan baik."
-    ]
-}
+name = st.text_input("Nama lengkap")
+email = st.text_input("Alamat Email")
 
-# Skor tiap pertanyaan: 1 (Tidak Setuju) - 5 (Sangat Setuju)
-skor_total = {}
-jawaban = {}
-for hormon, qs in questions.items():
+st.markdown("Jawab 40 pertanyaan berikut dengan skala 1 = Tidak Setuju sampai 5 = Sangat Setuju")
+
+def ask_questions(hormon, questions):
     st.subheader(hormon)
-    total = 0
-    jawaban[hormon] = []
-    for i, q in enumerate(qs):
-        ans = st.slider(f"{i+1}. {q}", 1, 5, 3, key=f"{hormon}_{i}")
-        jawaban[hormon].append(ans)
-        total += ans
-    skor_total[hormon] = total
+    scores = []
+    for i, q in enumerate(questions):
+        scores.append(st.slider(f"{i+1}. {q}", 1, 5, 3))
+    return np.mean(scores)
 
-# Konversi skor ke kategori: Rendah, Sedang, Tinggi
-def kategorikan(skor):
-    if skor >= 45:
-        return "high"
-    elif skor >= 30:
-        return "medium"
-    else:
-        return "low"
+endorfin_qs = ["Saya merasa lebih baik setelah tertawa.",
+    "Saya rutin berolahraga untuk meningkatkan mood.",
+    "Saya bisa tetap tenang saat mengalami rasa sakit.",
+    "Saya menikmati aktivitas yang memicu keringat.",
+    "Saya merasa segar setelah aktivitas fisik.",
+    "Saya suka mencari hiburan untuk menghilangkan stres.",
+    "Saya merasa lega setelah menangis.",
+    "Saya suka suasana ceria.",
+    "Saya bisa melihat sisi lucu dalam situasi sulit.",
+    "Saya mudah tertawa bersama orang lain."]
 
-kategori = {hormon: kategorikan(skor) for hormon, skor in skor_total.items()}
+dopamin_qs = ["Saya merasa puas setelah menyelesaikan target.",
+    "Saya termotivasi dengan tantangan.",
+    "Saya merasa senang mencentang to-do list.",
+    "Saya suka membuat rencana kerja.",
+    "Saya sering memecah tugas besar menjadi tugas kecil.",
+    "Saya fokus pada pencapaian.",
+    "Saya punya semangat tinggi saat mengejar tujuan.",
+    "Saya merasa senang saat mendapat pengakuan.",
+    "Saya merasa terdorong saat melihat progres kerja.",
+    "Saya suka mengevaluasi pencapaian saya."]
 
-# Gabungan analisis Endorfin dan Oksitosin
-gabungan_analysis = {
-    ("high", "high"): "🔥 Sangat bersemangat dan penuh empati. Cocok jadi pemimpin tangguh dan hangat.",
-    ("high", "medium"): "💪 Semangat dan cukup sosial, tapi perlu membangun kepercayaan emosional.",
-    ("high", "low"): "⚠️ Kuat pribadi tapi kurang empati. Waspadai sikap individualis.",
-    ("medium", "high"): "😊 Stabil dan sosial. Gaya kepemimpinan kolaboratif.",
-    ("medium", "medium"): "📘 Potensial pemimpin seimbang. Bisa ditingkatkan.",
-    ("medium", "low"): "😐 Relasi sosial jadi tantangan. Perlu aktif mendengar.",
-    ("low", "high"): "❤️ Dicintai orang lain, tapi semangat rendah. Jaga energi emosional.",
-    ("low", "medium"): "💤 Kelelahan dan relasi kurang stabil. Risiko burnout.",
-    ("low", "low"): "🚨 Waspadai kelelahan emosional dan keterasingan. Mulai aktivitas sosial ringan."
-}
-gabungan_result = gabungan_analysis.get(
-    (kategori["Endorfin"], kategori["Oksitosin"]), "Analisis gabungan tidak tersedia."
-)
+serotonin_qs = ["Saya merasa dihargai oleh rekan kerja.",
+    "Saya merasa dipercaya oleh orang-orang sekitar saya.",
+    "Saya merasa bangga jika memberi kontribusi positif.",
+    "Saya merasa senang saat nama saya disebut secara positif.",
+    "Saya suka memberi dukungan kepada orang lain.",
+    "Saya bangga jika bisa memimpin dengan adil.",
+    "Saya merasa nyaman saat ide saya diterima.",
+    "Saya berusaha membuat orang merasa dihargai.",
+    "Saya merasa senang saat dipercaya memegang tanggung jawab.",
+    "Saya suka menjadi bagian dari sesuatu yang lebih besar."]
 
-st.subheader("Hasil Kategori Hormon")
-for h, k in kategori.items():
-    st.write(f"{h}: {k.capitalize()}")
+oksitosin_qs = ["Saya nyaman membangun hubungan yang tulus.",
+    "Saya suka membantu tanpa pamrih.",
+    "Saya merasa tenang berada di dekat orang yang saya percaya.",
+    "Saya terbuka terhadap perasaan orang lain.",
+    "Saya suka menyapa atau menyemangati orang lain.",
+    "Saya menikmati kerja tim yang harmonis.",
+    "Saya sering berempati terhadap kesulitan orang lain.",
+    "Saya suka suasana kerja yang hangat.",
+    "Saya merasa senang saat ada kontak emosional yang kuat.",
+    "Saya merasa puas jika bisa membuat orang lain nyaman."]
 
-st.subheader("Analisa Gabungan Endorfin + Oksitosin")
-st.info(gabungan_result)
+endorfin_score = ask_questions("Endorfin", endorfin_qs)
+dopamin_score = ask_questions("Dopamin", dopamin_qs)
+serotonin_score = ask_questions("Serotonin", serotonin_qs)
+oksitosin_score = ask_questions("Oksitosin", oksitosin_qs)
 
-# Simpan ke PDF manual
+# Radar Chart
+labels = ['Endorfin', 'Dopamin', 'Serotonin', 'Oksitosin']
+values = [endorfin_score, dopamin_score, serotonin_score, oksitosin_score]
+values += values[:1]
+angles = [n / float(len(labels)) * 2 * np.pi for n in range(len(labels))]
+angles += angles[:1]
+
+fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+ax.plot(angles, values, linewidth=2)
+ax.fill(angles, values, alpha=0.3)
+ax.set_xticks(angles[:-1])
+ax.set_xticklabels(labels)
+ax.set_yticklabels(["1", "2", "3", "4", "5"])
+ax.set_title("Diagram Keseimbangan Hormon E.D.S.O")
+chart_path = tempfile.NamedTemporaryFile(suffix=".png", delete=False).name
+plt.savefig(chart_path)
+st.pyplot(fig)
+
+# Generate PDF
 if st.button("Download Hasil dalam PDF"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Hasil Kuisioner EDSO", ln=True, align="C")
+    pdf.cell(200, 10, txt="Hasil Kuisioner E.D.S.O", ln=True, align='C')
+    pdf.ln(10)
+    pdf.cell(200, 10, txt=f"Nama: {name}", ln=True)
+    pdf.cell(200, 10, txt=f"Email: {email}", ln=True)
     pdf.cell(200, 10, txt=f"Tanggal: {datetime.now().strftime('%d-%m-%Y')}", ln=True)
+    pdf.ln(5)
+    pdf.cell(200, 10, txt=f"Endorfin: {endorfin_score:.2f}", ln=True)
+    pdf.cell(200, 10, txt=f"Dopamin: {dopamin_score:.2f}", ln=True)
+    pdf.cell(200, 10, txt=f"Serotonin: {serotonin_score:.2f}", ln=True)
+    pdf.cell(200, 10, txt=f"Oksitosin: {oksitosin_score:.2f}", ln=True)
+    pdf.image(chart_path, x=10, y=None, w=180)
+    pdf_output = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    pdf.output(pdf_output.name)
 
-    for h in ["Endorfin", "Dopamin", "Serotonin", "Oksitosin"]:
-        pdf.cell(200, 10, txt=f"{h}: {kategori[h].capitalize()} (Skor: {skor_total[h]})", ln=True)
-    pdf.multi_cell(0, 10, txt=f"Analisa Gabungan: {gabungan_result}")
-
-    pdf.output("hasil_edso.pdf")
-    st.success("PDF berhasil dibuat! Silakan unduh dari file explorer lokal (jika dijalankan di PC).")
+    with open(pdf_output.name, "rb") as f:
+        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+        href = f'<a href="data:application/pdf;base64,{base64_pdf}" download="hasil_edso.pdf">📄 Klik di sini untuk mengunduh hasil PDF</a>'
+        st.markdown(href, unsafe_allow_html=True)
