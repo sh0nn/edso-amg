@@ -131,7 +131,7 @@ def analyze_score(name, score):
 
 # Gabungan endorfin + oksitosin
 eo_combo = (classify(avg_end), classify(avg_oks))
-combined_notes = {
+combined_notes = {('high', 'high'): '🔥 Kamu adalah sosok yang sangat bersemangat dan penuh empati. Pemimpin tangguh yang peduli pada tim. Cocok untuk peran yang intensif dan berbasis hubungan.', ('high', 'medium'): '💪 Kamu semangat dan cukup sosial, tapi perlu lebih banyak membangun kepercayaan emosional.', ('high', 'low'): '⚠️ Sangat kuat secara pribadi, namun kurang empati. Waspadai sikap individualis. Coba hadir lebih untuk tim.', ('medium', 'high'): '😊 Stabil dan sosial. Gaya kepemimpinan mendukung dan kolaboratif.', ('medium', 'medium'): '📘 Berada di tengah. Potensial menjadi pemimpin seimbang, masih bisa ditingkatkan.', ('medium', 'low'): '😐 Relasi sosial jadi tantangan. Perlu lebih aktif mendengar dan empati.', ('low', 'high'): '❤️ Dicintai dan dipercaya orang lain, tapi semangat rendah. Jaga energi emosionalmu.', ('low', 'medium'): '💤 Kelelahan dan relasi sosial kurang stabil. Berisiko burnout.', ('low', 'low'): '🚨 Waspadai kelelahan emosional dan keterasingan. Mulailah dari aktivitas menyenangkan bersama orang lain.'}
     ("high", "high"): "🔥 Sangat bersemangat dan penuh empati. Cocok jadi pemimpin tangguh dan hangat.",
     ("high", "medium"): "💪 Semangat tinggi, cukup sosial. Tingkatkan koneksi emosional.",
     ("high", "low"): "⚠️ Tangguh tapi cenderung individualis. Perlu bangun hubungan sosial.",
